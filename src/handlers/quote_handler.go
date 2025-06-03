@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"math/big"
 	"net/http"
 	"quote/src/model"
 	"quote/src/service"
@@ -17,6 +16,15 @@ func NewQuoteHandler(s *service.QuoteService) *QuoteHandler {
 	return &QuoteHandler{QuoteService: s}
 }
 
+func handleError(w http.ResponseWriter, err error, code int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+
+	if encodeErr := json.NewEncoder(w).Encode(map[string]string{"error": err.Error()}); encodeErr != nil {
+		return
+	}
+}
+
 func (h *QuoteHandler) AddQuote(w http.ResponseWriter, r *http.Request) {
 	var quote model.Quote
 
@@ -25,8 +33,13 @@ func (h *QuoteHandler) AddQuote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if quote.Quote == "" || quote.Author == "" {
-		http.Error(w, `{"error": "Both 'quote' and 'author' fields are required"}`, http.StatusBadRequest)
+	if quote.Quote == "" {
+		http.Error(w, "quote can't be empty", http.StatusBadRequest)
+		return
+	}
+
+	if quote.Author == "" {
+		http.Error(w, "author can't be empty", http.StatusBadRequest)
 		return
 	}
 
@@ -49,7 +62,13 @@ func (h *QuoteHandler) GetQuotes(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *QuoteHandler) GetRandomQuote(w http.ResponseWriter, r *http.Request) {
-	quotes := h.QuoteService.GetRandomQuote()
+	quotes, err := h.QuoteService.GetRandomQuote()
+
+	if err != nil {
+		handleError(w, err, http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 
 	if err := json.NewEncoder(w).Encode(quotes); err != nil {
@@ -59,11 +78,14 @@ func (h *QuoteHandler) GetRandomQuote(w http.ResponseWriter, r *http.Request) {
 
 func (h *QuoteHandler) DeleteQuote(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	quoteId, err := strconv.ParseInt(id, 10, 64)
+	quoteId, err := strconv.Atoi(id)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 
-	h.QuoteService.DeleteQuote(big.NewInt(quoteId))
+	if err = h.QuoteService.DeleteQuote(quoteId); err != nil {
+		handleError(w, err, http.StatusInternalServerError)
+		return
+	}
 }

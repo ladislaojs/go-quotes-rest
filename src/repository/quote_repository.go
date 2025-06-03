@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"math/big"
+	"errors"
 	"math/rand"
 	"quote/src/model"
 )
@@ -14,10 +14,14 @@ func NewQuoteRepository() *QuoteRepository {
 	return &QuoteRepository{}
 }
 
-func (r *QuoteRepository) Add(quote model.Quote) *model.Quote {
-	quote.ID = *big.NewInt(int64(len(r.quotes)) + 1)
-	r.quotes = append(r.quotes, quote)
-	return &quote
+func (r *QuoteRepository) Add(quote *model.Quote) *model.Quote {
+	if len(r.quotes) > 0 {
+		quote.ID = r.quotes[len(r.quotes)-1].ID + 1
+	} else {
+		quote.ID = 1
+	}
+	r.quotes = append(r.quotes, *quote)
+	return quote
 }
 
 func (r *QuoteRepository) FindAll() []model.Quote {
@@ -28,8 +32,12 @@ func (r *QuoteRepository) FindAll() []model.Quote {
 	return r.quotes
 }
 
-func (r *QuoteRepository) FindRandom() *model.Quote {
-	return &r.quotes[rand.Intn(len(r.quotes))]
+func (r *QuoteRepository) FindRandom() (*model.Quote, error) {
+	if len(r.quotes) == 0 {
+		return nil, errors.New("no quotes found")
+	}
+
+	return &r.quotes[rand.Intn(len(r.quotes))], nil
 }
 
 func (r *QuoteRepository) FindAllByAuthor(author string) []model.Quote {
@@ -48,10 +56,17 @@ func (r *QuoteRepository) FindAllByAuthor(author string) []model.Quote {
 	return quotes
 }
 
-func (r *QuoteRepository) Delete(id *big.Int) {
+func (r *QuoteRepository) Delete(id int) error {
+	if len(r.quotes) == 0 {
+		return errors.New("no quotes found")
+	}
+
 	for i, quote := range r.quotes {
-		if quote.ID.Int64() == id.Int64() {
+		if quote.ID == id {
 			r.quotes = append(r.quotes[:i], r.quotes[i+1:]...)
+			return nil
 		}
 	}
+
+	return errors.New("quote not found")
 }

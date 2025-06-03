@@ -1,7 +1,6 @@
 package service
 
 import (
-	"math/big"
 	"quote/src/model"
 	"quote/src/repository"
 )
@@ -19,7 +18,7 @@ func (s *QuoteService) AddQuote(author string, quote string) model.Quote {
 		Author: author, Quote: quote,
 	}
 
-	return *s.QuoteRepository.Add(quoteModel)
+	return *s.QuoteRepository.Add(&quoteModel)
 }
 
 func (s *QuoteService) GetAllQuotes(author string) []model.Quote {
@@ -30,10 +29,22 @@ func (s *QuoteService) GetAllQuotes(author string) []model.Quote {
 	return s.QuoteRepository.FindAll()
 }
 
-func (s *QuoteService) GetRandomQuote() *model.Quote {
-	return s.QuoteRepository.FindRandom()
+func (s *QuoteService) GetRandomQuote() (*model.Quote, error) {
+	quote, err := s.QuoteRepository.FindRandom()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return quote, nil
 }
 
-func (s *QuoteService) DeleteQuote(id *big.Int) {
-	s.QuoteRepository.Delete(id)
+func (s *QuoteService) DeleteQuote(id int) error {
+	err := s.QuoteRepository.Delete(id)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

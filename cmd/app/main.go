@@ -21,12 +21,7 @@ func main() {
 
 	r.HandleFunc("GET /quotes/random", quoteHandler.GetRandomQuote)
 
-	r.HandleFunc("DELETE /quotes/{id}", func(w http.ResponseWriter, r *http.Request) {
-		_, err := w.Write([]byte(r.PathValue("id")))
-		if err != nil {
-			return
-		}
-	})
+	r.HandleFunc("DELETE /quotes/{id}", quoteHandler.DeleteQuote)
 
 	err := http.ListenAndServe(":80", r)
 	if err != nil {
