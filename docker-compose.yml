@@ -1,0 +1,13 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8000:80"
+    volumes:
+      - .:/app
+    networks:
+      - default
+
+networks:
+  default:
+    driver: bridge
